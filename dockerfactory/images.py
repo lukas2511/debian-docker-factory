@@ -62,7 +62,7 @@ def add_files(image, files):
 
     for path in files:
         src = path['src']
-        dst = os.path.join(base_path, path['dst'])
+        dst = os.path.join(base_path, path['dst'][1:] if path['dst'].startswith('/') else path['dst'])
         dstdir = os.path.dirname(dst)
 
         if not os.path.exists(dstdir):
