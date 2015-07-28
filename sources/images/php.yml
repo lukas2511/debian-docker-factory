@@ -1,0 +1,10 @@
+base: nginx
+
+tools:
+  - nginx
+  - supervisor
+  - autodeploy
+
+languages:
+  - php
+

@@ -1,0 +1,12 @@
+name: supervisor
+
+packages:
+ - supervisor
+
+languages:
+ - python
+
+files:
+ - src: supervisord.conf
+   dst: /etc/supervisor/supervisord.conf
+

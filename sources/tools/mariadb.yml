@@ -1,0 +1,7 @@
+name: mariadb
+
+packages:
+ - mariadb-server
+ - mariadb-client
+
+cleanup_command: rm -rf /var/lib/mysql

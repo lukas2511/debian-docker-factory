@@ -1,0 +1,12 @@
+name: autodeploy
+
+languages:
+ - python
+
+files:
+ - src: supervisord.ini
+   dst: /etc/supervisor/conf.d/autodeploy.ini
+
+ - src: autodeploy.py
+   dst: /usr/sbin/autodeploy.py
+
