@@ -83,3 +83,12 @@ def check_for_updates(packages, repo_packages):
 
     return updates
 
+def contains_all_packages(installed_packages, required_packages):
+    for package in required_packages:
+        if not type(package) == bytes:
+            package = package.encode('ascii')
+
+        if not package in installed_packages:
+            return False
+
+    return True

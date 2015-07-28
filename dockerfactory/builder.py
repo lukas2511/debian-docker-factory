@@ -42,14 +42,22 @@ def build_images(images):
         files_rebuild = False
         if not image_name in d or not 'packages_image' in d[image_name]:
             full_rebuild = True
+            rebuild_reason = "first build"
         elif d[image['base']]['packages_image_created'] > d[image_name]['packages_image_created']:
             full_rebuild = True
+            rebuild_reason = "base image was updated"
         elif len(dockerfactory.packages.check_for_updates(d[image_name]['packages'], repo_pkgs)) > 0:
             full_rebuild = True
+            rebuild_reason = "updates available"
+        elif not dockerfactory.packages.contains_all_packages(d[image_name]['packages'], image['packages']):
+            full_rebuild = True
+            rebuild_reason = "not all required packages are installed"
         elif not 'created' in d[image_name]:
             files_rebuild = True
+            rebuild_reason = "first build"
         elif dockerfactory.files.get_latest_file_change(image['image_files']) > d[image_name]['created']:
             files_rebuild = True
+            rebuild_reason = "updated files"
 
         if not image_name in d:
             d[image_name] = {}
@@ -57,8 +65,8 @@ def build_images(images):
         new_spec = d[image_name]
 
         if full_rebuild:
-            print(":: Rebuilding %s (full)" % image_name)
-            if set(d[image['base']]['packages']).issuperset(set(image['packages'])):
+            print(":: Rebuilding %s (full: %s)" % (image_name, rebuild_reason))
+            if dockerfactory.packages.contains_all_packages(d[image['base']]['packages'], image['packages']):
                 print("   -> Base image already has all packages, reusing image")
                 new_spec['packages_image_created'] = d[image['base']]['packages_image_created']
                 new_spec['packages_image'] = d[image['base']]['packages_image']
@@ -77,7 +85,7 @@ def build_images(images):
 
         if files_rebuild:
             if not full_rebuild:
-                print(":: Rebuilding %s (files only)" % image_name)
+                print(":: Rebuilding %s (files only: %s)" % (image_name, rebuild_reason))
 
             print("   -> Adding files...")
             files_image = dockerfactory.images.add_files(new_spec['packages_image'], image['image_files'])
