@@ -16,6 +16,7 @@ def check_base_image():
             'id': base_image,
             'packages_image': base_image,
             'packages': dockerfactory.packages.get_pkg_versions(base_image),
+            'packages_image_created': dockerfactory.images.get_image_date(base_image),
             'created': dockerfactory.images.get_image_date(base_image)
         }
     else:
@@ -30,7 +31,7 @@ def build_images(images):
             continue
         seen_images.append(image_name)
 
-        image = dockerfactory.sourceparser.parse_image("nginx")
+        image = dockerfactory.sourceparser.parse_image(image_name)
 
         # build dependencies
         if not image['base'] == 'debian':
@@ -39,12 +40,14 @@ def build_images(images):
         # full rebuild
         full_rebuild = False
         files_rebuild = False
-        if not image_name in d or not 'id' in d[image_name]:
+        if not image_name in d or not 'packages_image' in d[image_name]:
             full_rebuild = True
-        elif d[image['base']]['created'] > d[image_name]['created']:
+        elif d[image['base']]['packages_image_created'] > d[image_name]['packages_image_created']:
             full_rebuild = True
         elif len(dockerfactory.packages.check_for_updates(d[image_name]['packages'], repo_pkgs)) > 0:
             full_rebuild = True
+        elif not 'created' in d[image_name]:
+            files_rebuild = True
         elif dockerfactory.files.get_latest_file_change(image['image_files']) > d[image_name]['created']:
             files_rebuild = True
 
@@ -57,16 +60,20 @@ def build_images(images):
             print(":: Rebuilding %s (full)" % image_name)
             if set(d[image['base']]['packages']).issuperset(set(image['packages'])):
                 print("   -> Base image already has all packages, reusing image")
-                new_spec['packages_image'] = d[image['base']]['id']
+                new_spec['packages_image_created'] = d[image['base']]['packages_image_created']
+                new_spec['packages_image'] = d[image['base']]['packages_image']
                 new_spec['packages'] = d[image['base']]['packages']
             else:
                 print("   -> Installing packages...")
-                package_image = dockerfactory.images.install_packages(d[image['base']]['id'], image['packages'])
-                new_spec['packages_image'] = package_image
-                new_spec['packages'] = dockerfactory.packages.get_pkg_versions(package_image)
+                packages_image = dockerfactory.images.install_packages(d[image['base']]['packages_image'], image['packages'])
+                new_spec['packages_image_created'] = dockerfactory.images.get_image_date(packages_image)
+                new_spec['packages_image'] = packages_image
+                new_spec['packages'] = dockerfactory.packages.get_pkg_versions(packages_image)
                 print("   -> %d packages installed (%d total)" % (len(new_spec['packages']) - len(d[image['base']]['packages']), len(new_spec['packages'])))
 
             files_rebuild = True
+
+        d[image_name] = new_spec
 
         if files_rebuild:
             if not full_rebuild:
